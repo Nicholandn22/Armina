@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatUnits } from "viem";
 import { useIDRXBalance, useIDRXDecimals } from "@/hooks/useIDRX";
 import { usePathname } from "next/navigation";
@@ -26,6 +26,13 @@ export function Header() {
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const isWrongNetwork = isUserConnected && !!address && chainId !== baseSepolia.id;
   const { t } = useLanguage();
+
+  // Auto-switch to Base Sepolia when on wrong network
+  useEffect(() => {
+    if (isWrongNetwork && !isSwitching) {
+      switchChain({ chainId: baseSepolia.id });
+    }
+  }, [isWrongNetwork]);
 
   const navItems = [
     {

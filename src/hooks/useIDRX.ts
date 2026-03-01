@@ -89,12 +89,12 @@ export function useClaimFaucet() {
 }
 
 export function useApproveIDRX() {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  const approve = (spender: `0x${string}`, amount: bigint) => {
+  const approve = async (spender: `0x${string}`, amount: bigint) => {
     if (!CONTRACTS.IDRX) return;
-    writeContract({
+    return writeContractAsync({
       address: CONTRACTS.IDRX,
       abi: IDRX_ABI,
       functionName: "approve",
