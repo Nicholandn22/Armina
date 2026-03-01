@@ -1,15 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { formatUnits } from "viem";
 import { useIDRXBalance, useIDRXDecimals } from "@/hooks/useIDRX";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import {
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from "@coinbase/onchainkit/wallet";
-import { Address, Avatar, Name, Identity } from "@coinbase/onchainkit/identity";
 import { ConnectButton } from "./ConnectButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useBalance, useChainId, useSwitchChain } from "wagmi";
@@ -19,7 +14,8 @@ import { useLanguage } from "@/components/providers";
 export function Header() {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
-  const { address, isConnected: isUserConnected } = useAuth();
+  const { address, isConnected: isUserConnected, disconnect } = useAuth();
+  const [showMenu, setShowMenu] = useState(false);
   const { data: balance, isLoading } = useIDRXBalance(address);
   const { data: idrxDecimals } = useIDRXDecimals();
   const { data: ethBalance } = useBalance({
@@ -249,16 +245,43 @@ export function Header() {
           {!isHomePage && (
             <>
               {isUserConnected && address ? (
-                <Wallet>
-                  <WalletDropdown>
-                    <Identity address={address} schemaId="0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9">
-                      <Avatar className="w-8 h-8" />
-                      <Name className="text-base text-white" />
-                      <Address className="text-sm text-white/70 font-mono" />
-                    </Identity>
-                    <WalletDropdownDisconnect className="text-sm" />
-                  </WalletDropdown>
-                </Wallet>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMenu(!showMenu)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                      {address.slice(2, 4).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-mono text-white/90 hidden sm:block">
+                      {address.slice(0, 6)}...{address.slice(-4)}
+                    </span>
+                    <svg className="w-3.5 h-3.5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                        <div className="p-3 border-b border-slate-100">
+                          <p className="text-xs text-slate-500 mb-1">Connected</p>
+                          <p className="text-sm font-mono text-slate-800 font-semibold truncate">{address}</p>
+                        </div>
+                        <button
+                          onClick={() => { disconnect(); setShowMenu(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Disconnect Wallet
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               ) : (
                 <ConnectButton variant="header">
                   Connect
