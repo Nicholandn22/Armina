@@ -56,7 +56,7 @@ export default function FaucetPage() {
         return;
       }
     }
-    toast.loading("Claiming 1M IDRX...", { id: "claim" });
+    toast.loading("Claiming 500K IDRX...", { id: "claim" });
     claimFaucet();
   };
 
@@ -124,7 +124,7 @@ export default function FaucetPage() {
         {lastClaimed && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
             <p className="text-sm text-green-800">
-              ✓ Claimed {claimCount}x (total {(claimCount * 1000000).toLocaleString("id-ID")} IDRX) — Last: {lastClaimed.toLocaleTimeString()}
+              ✓ Claimed {claimCount}x (total {(claimCount * 500000).toLocaleString("id-ID")} IDRX) — Last: {lastClaimed.toLocaleTimeString()}
             </p>
           </div>
         )}

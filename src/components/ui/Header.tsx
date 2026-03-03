@@ -25,7 +25,7 @@ export function Header() {
   const chainId = useChainId();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const isWrongNetwork = isUserConnected && !!address && chainId !== baseSepolia.id;
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   // Auto-switch to Base Sepolia when on wrong network
   useEffect(() => {
@@ -208,6 +208,23 @@ export function Header() {
 
         {/* Right Side - Balance & Wallet */}
         <div className="flex items-center gap-3 ml-auto">
+          {/* Language Switcher */}
+          <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
+            {(["en", "id", "zh"] as const).map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  language === lang
+                    ? "bg-white text-[#1e2a4a]"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                {lang.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           {/* Wrong Network Badge */}
           {isWrongNetwork && (
             <button

@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function HomePage() {
   const { address, isConnected: isUserConnected, disconnect } = useAuth();
   const { showOnboarding } = useOnboarding();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   const displayAddress = address;
   const { activePools, completedPools, pools } = useAllPools();
@@ -35,38 +35,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#1d2856] relative">
-      {/* Language Selector - Top Right */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
-          <button
-            onClick={() => setLanguage("en")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === "en"
-              ? "bg-white text-[#1d2856]"
-              : "text-white/70 hover:text-white"
-              }`}
-          >
-            EN
-          </button>
-          <button
-            onClick={() => setLanguage("id")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === "id"
-              ? "bg-white text-[#1d2856]"
-              : "text-white/70 hover:text-white"
-              }`}
-          >
-            ID
-          </button>
-          <button
-            onClick={() => setLanguage("zh")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${language === "zh"
-              ? "bg-white text-[#1d2856]"
-              : "text-white/70 hover:text-white"
-              }`}
-          >
-            中文
-          </button>
-        </div>
-      </div>
+
 
       {/* Hero Section - PoolTogether Style */}
       <div className="relative overflow-hidden bg-gradient-to-b from-[#1d2856] via-[#2a3b75] to-[#f8fafc] pb-24 pt-10">
