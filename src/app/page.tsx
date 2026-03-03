@@ -2,7 +2,7 @@
 
 import { useReadContract } from "wagmi";
 import Link from "next/link";
-import { formatAddress } from "@/lib/constants";
+import { formatAddress, formatIDRX, POOL_TIERS } from "@/lib/constants";
 import Image from "next/image";
 import { useOnboarding, useLanguage } from "@/components/providers";
 import { IDRX_ABI, CONTRACTS } from "@/contracts/abis";
@@ -16,7 +16,7 @@ export default function HomePage() {
   const { t } = useLanguage();
 
   const displayAddress = address;
-  const { activePools, completedPools, pools } = useAllPools();
+  const { openPools, activePools, completedPools } = useAllPools();
 
   // Fetch IDRX balance
   const { data: idrxBalance } = useReadContract({
@@ -114,7 +114,7 @@ export default function HomePage() {
               </div>
               <div className="p-5 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 text-center">
                 <p className="text-blue-200 text-sm uppercase tracking-wider font-semibold">{t.activePools}</p>
-                <p className="text-3xl md:text-4xl font-bold text-white mt-1">{activePools.length}</p>
+                <p className="text-3xl md:text-4xl font-bold text-white mt-1">{openPools.length + activePools.length}</p>
               </div>
               <div className="p-5 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 text-center">
                 <p className="text-blue-200 text-sm uppercase tracking-wider font-semibold">{t.uniqueSavers}</p>
@@ -177,7 +177,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Card 3: Active Pools */}
+            {/* Card 3: Open Pools */}
             <div className="md:col-span-2 p-8 bg-white rounded-[2rem] shadow-xl border border-slate-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -187,35 +187,60 @@ export default function HomePage() {
                 <Link href="/pool" className="text-blue-600 font-bold hover:underline text-lg">{t.viewAll}</Link>
               </div>
 
-              {activePools.length > 0 ? (
+              {openPools.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {activePools.slice(0, 2).map((pool) => (
-                    <Link key={pool.id.toString()} href={`/pools/${pool.id.toString()}`}>
-                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-colors group cursor-pointer">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
-                            #{pool.id.toString()}
+                  {openPools.slice(0, 2).map((pool) => {
+                    const pot = pool.contribution * BigInt(pool.maxParticipants);
+                    const slotsLeft = pool.maxParticipants - pool.currentParticipants;
+                    const fillPct = Math.round((pool.currentParticipants / pool.maxParticipants) * 100);
+                    return (
+                      <Link key={pool.id.toString()} href="/pool">
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-[#1e2a4a] to-[#2a3a5c] text-white hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
+                          {/* Tier + badge */}
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-xs font-semibold text-white/60 uppercase tracking-wide">
+                              {POOL_TIERS[pool.tier].nameId}
+                            </span>
+                            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 text-green-300 rounded-full text-xs font-bold">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                              {t.openPools}
+                            </span>
                           </div>
-                          <span className="px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-bold">{t.liveTag}</span>
+
+                          {/* Prize pot - headline */}
+                          <p className="text-xs text-white/50 uppercase tracking-wide mb-0.5">{t.prize}</p>
+                          <p className="text-3xl font-extrabold text-yellow-300 mb-4">
+                            {formatIDRX(pot)}
+                          </p>
+
+                          {/* Contribution */}
+                          <div className="flex justify-between text-sm mb-3">
+                            <span className="text-white/60">{t.contributionPerMonth}</span>
+                            <span className="font-semibold text-white">{formatIDRX(pool.contribution)}</span>
+                          </div>
+
+                          {/* Slots progress */}
+                          <div className="mb-1">
+                            <div className="flex justify-between text-xs text-white/50 mb-1">
+                              <span>{pool.currentParticipants}/{pool.maxParticipants} {t.participants}</span>
+                              <span className="text-green-300 font-semibold">{slotsLeft} slot tersisa</span>
+                            </div>
+                            <div className="w-full bg-white/10 rounded-full h-1.5">
+                              <div
+                                className="bg-yellow-300 h-1.5 rounded-full transition-all"
+                                style={{ width: `${fillPct}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-base">
-                            <span className="text-slate-500">{t.prize}</span>
-                            <span className="font-bold text-slate-800">??? IDRX</span>
-                          </div>
-                          <div className="flex justify-between text-base">
-                            <span className="text-slate-500">{t.participants}</span>
-                            <span className="font-bold text-slate-800 text-right">{pool.currentParticipants}/{pool.maxParticipants}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 bg-slate-50 rounded-2xl">
                   <p className="text-slate-400 text-lg">{t.noActivePoolsNow}</p>
-                  <Link href="/pool/create" className="text-blue-600 font-bold mt-2 inline-block text-lg">{t.beFirstToCreate}</Link>
+                  <Link href="/pools/create" className="text-blue-600 font-bold mt-2 inline-block text-lg">{t.beFirstToCreate}</Link>
                 </div>
               )}
             </div>
