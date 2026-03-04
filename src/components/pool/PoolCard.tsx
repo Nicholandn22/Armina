@@ -17,6 +17,7 @@ interface PoolCardProps {
   onJoin?: () => void;
   onView?: () => void;
   showJoinButton?: boolean;
+  isUserJoined?: boolean;
 }
 
 export function PoolCard({
@@ -24,6 +25,7 @@ export function PoolCard({
   onJoin,
   onView,
   showJoinButton = true,
+  isUserJoined = false,
 }: PoolCardProps) {
   const tierConfig = POOL_TIERS[pool.tier];
   const status = getPoolStatus(pool);
@@ -93,7 +95,7 @@ export function PoolCard({
         )}
 
         {/* Join button */}
-        {showJoinButton && status === "open" && (
+        {showJoinButton && status === "open" && !isUserJoined && (
           <Button
             className="w-full mt-2"
             onClick={(e) => {
@@ -102,6 +104,20 @@ export function PoolCard({
             }}
           >
             Join Pool
+          </Button>
+        )}
+
+        {/* Already joined indicator */}
+        {showJoinButton && status === "open" && isUserJoined && (
+          <Button
+            variant="secondary"
+            className="w-full mt-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView?.();
+            }}
+          >
+            ✓ Sudah Bergabung → Lihat
           </Button>
         )}
 

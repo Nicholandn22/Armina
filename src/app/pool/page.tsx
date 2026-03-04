@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Pool } from "@/types";
 import { POOL_TIERS, calculateCollateral, formatIDRX } from "@/lib/constants";
@@ -13,7 +13,7 @@ import { useApproveIDRX, useIDRXBalance } from "@/hooks/useIDRX";
 import { ARMINA_POOL_ADDRESS } from "@/contracts/config";
 import { ARMINA_POOL_ABI } from "@/contracts/abis";
 import { waitForTransactionReceipt, readContract, simulateContract } from "wagmi/actions";
-import { useConfig } from "wagmi";
+import { useConfig, useReadContracts } from "wagmi";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { debugError } from "@/lib/debug";
@@ -34,10 +34,39 @@ export default function PoolPage() {
   const { openPools, activePools, completedPools, isLoading: isLoadingPools, refetch } = useAllPools();
   const { joinPool } = useArminaPool();
   const { approve } = useApproveIDRX();
-  // userBalance: raw balance dari chain (2 desimal), bandingkan dengan pool amounts (juga 2 desimal)
   const { data: userBalance } = useIDRXBalance(address);
-  // Baca dynamic collateral multiplier dari contract (125 normal, 150 jika price feed stale)
   const { multiplier: collateralMultiplier } = useCollateralMultiplier();
+
+  // Batch check: apakah user sudah join di setiap open pool (satu multicall)
+  const participationContracts = useMemo(
+    () =>
+      address && openPools.length > 0
+        ? openPools.map((pool) => ({
+            address: ARMINA_POOL_ADDRESS as `0x${string}`,
+            abi: ARMINA_POOL_ABI as any,
+            functionName: "getParticipantDetails" as const,
+            args: [pool.id, address],
+          }))
+        : [],
+    [openPools, address]
+  );
+  const { data: participationData } = useReadContracts({
+    contracts: participationContracts.length > 0 ? participationContracts : undefined,
+    query: { enabled: !!address && openPools.length > 0 },
+  });
+  // Set berisi pool ID (string) yang sudah diikuti user
+  const joinedPoolIds = useMemo(() => {
+    const set = new Set<string>();
+    if (!participationData || !address) return set;
+    openPools.forEach((pool, i) => {
+      const result = participationData[i];
+      if (result?.status === "success" && result.result) {
+        const collateral = (result.result as any)[0] as bigint;
+        if (collateral > 0n) set.add(pool.id.toString());
+      }
+    });
+    return set;
+  }, [participationData, openPools, address]);
 
   const isLoading = isJoiningPool;
 
@@ -58,6 +87,16 @@ export default function PoolPage() {
     setIsJoiningPool(true);
     const poolId = selectedPool.id;
     try {
+      // Early check: cegah approve yang sia-sia jika user sudah bergabung
+      if (address && joinedPoolIds.has(poolId.toString())) {
+        toast.dismiss("join");
+        setShowJoinModal(false);
+        setSelectedPool(null);
+        toast.success("Kamu sudah ada di pool ini!", { duration: 4000 });
+        router.push(`/pools/${poolId.toString()}`);
+        return;
+      }
+
       // Hitung collateral dengan multiplier dari contract (2 desimal IDRX)
       const multiplier = BigInt(collateralMultiplier);
       const collateral =
@@ -160,7 +199,13 @@ export default function PoolPage() {
           "";
         console.error("[JoinPool] Simulate failed:", simErr);
         if (errorName.includes("AlreadyJoined")) {
-          throw new Error("Kamu sudah bergabung di pool ini. Refresh halaman.");
+          // Jangan throw — langsung redirect ke detail pool
+          toast.dismiss("join");
+          setShowJoinModal(false);
+          setSelectedPool(null);
+          toast.success("Kamu sudah ada di pool ini!", { duration: 4000 });
+          router.push(`/pools/${poolId.toString()}`);
+          return;
         } else if (errorName.includes("PoolNotOpen")) {
           throw new Error("Pool sudah tidak Open. Refresh halaman dan pilih pool lain.");
         } else if (errorName.includes("AlreadyClaimed")) {
@@ -260,8 +305,10 @@ export default function PoolPage() {
                     key={pool.id.toString()}
                     pool={pool}
                     onJoin={() => handleJoinPool(pool)}
+                    onView={() => router.push(`/pools/${pool.id.toString()}`)}
                     isConnected={isConnected}
                     userBalance={userBalance}
+                    isUserJoined={joinedPoolIds.has(pool.id.toString())}
                   />
                 ))}
               </div>
@@ -457,11 +504,15 @@ function PoolCard({
   onJoin,
   isConnected,
   userBalance,
+  isUserJoined = false,
+  onView,
 }: {
   pool: Pool;
   onJoin: () => void;
   isConnected: boolean;
   userBalance?: bigint;
+  isUserJoined?: boolean;
+  onView?: () => void;
 }) {
   const { t } = useLanguage();
   const tierConfig = POOL_TIERS[pool.tier];
@@ -534,13 +585,23 @@ function PoolCard({
       {/* Pool ID */}
       <p className="text-xs text-slate-400 mb-3">#{pool.id.toString()} · {tierConfig.cycleDays}{t.daysCycle}</p>
 
-      <Button
-        className="w-full mt-auto text-sm py-2"
-        onClick={onJoin}
-        disabled={!isConnected}
-      >
-        {!isConnected ? t.connectWalletToJoin : t.joinPool}
-      </Button>
+      {isUserJoined ? (
+        <Button
+          variant="secondary"
+          className="w-full mt-auto text-sm py-2 border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
+          onClick={onView}
+        >
+          ✓ Sudah Bergabung → Lihat Detail
+        </Button>
+      ) : (
+        <Button
+          className="w-full mt-auto text-sm py-2"
+          onClick={onJoin}
+          disabled={!isConnected}
+        >
+          {!isConnected ? t.connectWalletToJoin : t.joinPool}
+        </Button>
+      )}
     </div>
   );
 }
