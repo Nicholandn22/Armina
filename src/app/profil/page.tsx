@@ -15,6 +15,7 @@ import { useReputationData, useHasReputation, useCollateralDiscount } from "@/ho
 import { useParticipantInfo, useAllPools } from "@/hooks/usePoolData";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { debugError } from "@/lib/debug";
 
 const LEVEL_COLORS: Record<ReputationLevel, { border: string; text: string; bg: string; dot: string }> = {
   bronze:  { border: "border-amber-300",  text: "text-amber-700",  bg: "bg-amber-50",  dot: "bg-amber-500" },
@@ -68,8 +69,9 @@ export default function ProfilPage() {
     if (claimError) {
       toast.dismiss("profil-claim");
       const msg = (claimError as any)?.shortMessage || (claimError as any)?.message || "Failed to claim IDRX";
-      if (msg.toLowerCase().includes("chain") || msg.toLowerCase().includes("network")) return;
-      toast.error(msg);
+      if (msg.toLowerCase().includes("does not match the target chain") || msg.toLowerCase().includes("chain mismatch")) return;
+      debugError("ProfilPage:claimFaucet", claimError);
+      toast.error(msg, { duration: 8000 });
     }
   }, [claimError]);
 

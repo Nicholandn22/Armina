@@ -9,6 +9,7 @@ import { baseSepolia } from "wagmi/chains";
 import { formatUnits } from "viem";
 import { useClaimFaucet, useIDRXBalance, useIDRXDecimals } from "@/hooks/useIDRX";
 import { useLanguage } from "@/components/providers";
+import { debugError } from "@/lib/debug";
 
 export default function FaucetPage() {
   const router = useRouter();
@@ -37,9 +38,10 @@ export default function FaucetPage() {
     if (error) {
       toast.dismiss("claim");
       const msg = (error as any)?.shortMessage || (error as any)?.message || "Failed to claim IDRX";
-      // Skip chain mismatch errors — UI already shows the Switch Network banner
-      if (msg.toLowerCase().includes("chain") || msg.toLowerCase().includes("network")) return;
-      toast.error(msg);
+      // Skip only wagmi chain mismatch errors — UI banner already handles these
+      if (msg.toLowerCase().includes("does not match the target chain") || msg.toLowerCase().includes("chain mismatch")) return;
+      debugError("FaucetPage", error);
+      toast.error(msg, { duration: 8000 });
     }
   }, [error]);
 

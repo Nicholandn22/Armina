@@ -16,6 +16,7 @@ import { waitForTransactionReceipt, readContract, simulateContract } from "wagmi
 import { useConfig } from "wagmi";
 import toast from "react-hot-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { debugError } from "@/lib/debug";
 
 type TabType = "open" | "active" | "completed";
 
@@ -201,7 +202,7 @@ export default function PoolPage() {
       // Redirect ke detail pool agar user bisa lihat partisipasinya
       router.push(`/pools/${poolId.toString()}`);
     } catch (error: any) {
-      console.error("Error joining pool:", error);
+      debugError("PoolPage:joinPool", error);
       const msg = error?.shortMessage || error?.message || "Gagal join pool";
       toast.error(msg, { id: "join", duration: 8000 });
     } finally {

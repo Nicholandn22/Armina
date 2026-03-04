@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { Header } from "@/components/ui/Header";
 import { ToastProvider } from "@/components/ToastProvider";
+import { DebugPanel } from "@/components/ui/DebugPanel";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased bg-[#1e2a4a]`}>
         <Providers>
           <ToastProvider />
+          <DebugPanel />
           <div className="min-h-screen">
             <Header />
             <main className="w-full mx-auto pb-20 pt-4 px-4 md:px-8">{children}</main>
